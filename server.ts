@@ -3023,7 +3023,7 @@ I am actively tracking all **100 members** and live Bitcoin transactions. Here i
   // --- VITE MIDDLEWARE (DEV) OR STATIC ASSETS (PROD) ---
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: { server } },
       appType: "spa",
     });
     app.use(vite.middlewares);
