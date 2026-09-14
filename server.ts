@@ -490,7 +490,21 @@ class RealtimeManager {
   private demoScenario: string = "NORMAL";
 
   initialize(server: http.Server) {
-    this.wss = new WebSocketServer({ server, path: "/ws/live" });
+    // Use noServer mode and route upgrades manually. A `{ server, path }`
+    // WebSocketServer attaches its own listener to the HTTP server's "upgrade"
+    // event and calls abortHandshake(400) for any non-matching path — which
+    // kills Vite's HMR websocket upgrade (path "/") before Vite can handle it.
+    // By handling upgrades ourselves we only claim "/ws/live" and leave every
+    // other upgrade (including Vite HMR) for Vite's own listener.
+    this.wss = new WebSocketServer({ noServer: true });
+
+    server.on("upgrade", (req, socket, head) => {
+      const pathname = new URL(req.url || "", "http://localhost").pathname;
+      if (pathname !== "/ws/live") return;
+      this.wss!.handleUpgrade(req, socket, head, (ws) => {
+        this.wss!.emit("connection", ws, req);
+      });
+    });
 
     this.wss.on("connection", (ws: WebSocket) => {
       // Send initial welcome & system status
